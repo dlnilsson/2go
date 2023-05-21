@@ -1,0 +1,14 @@
+{
+	"name": "A name",
+	"time": "2021-02-18T21:54:42.123Z",
+	"age": 30,
+	"height": 1.75,
+	"active": true,
+	"data": "SGVsbG8gd29ybGQ=",
+	"attributes": {
+		"first": "value1",
+		"second": "value2"
+	},
+	"items": ["item1", "item2"],
+	"anyValue": {}
+}
