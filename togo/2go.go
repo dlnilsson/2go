@@ -190,7 +190,7 @@ func toCamelCase(str string) string {
 	camelStr := spaceFollowedByLetter.ReplaceAllStringFunc(str, func(s string) string {
 		return strings.ToUpper(strings.TrimSpace(s))
 	})
-	return strings.ReplaceAll(camelStr, " ", "")
+	return titleCaser.String(strings.ReplaceAll(camelStr, " ", ""))
 }
 
 func isNumeric(s string) bool {
