@@ -125,11 +125,6 @@ func isBase64(s string) bool {
 		return false
 	}
 
-	expectedLength := (len(decoded)*4 + 2) / 3
-	if len(s) != expectedLength {
-		return false
-	}
-
 	// Check for abnormal characters in the decoded string
 	for _, r := range decoded {
 		if !utf8.ValidRune(rune(r)) || (r < 32 && r != 9 && r != 10 && r != 13) {
