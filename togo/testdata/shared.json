@@ -1,0 +1,12 @@
+{
+    "foo": {
+        "hello" : {
+            "message": "world"
+        }
+    },
+    "bar": {
+        "hello" : {
+            "description": "world"
+        }
+    }
+}

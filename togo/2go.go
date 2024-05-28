@@ -17,18 +17,12 @@ import (
 )
 
 var (
-	// iso8601Regex expression to match if we get time.Time
-	iso8601Regex = regexp.MustCompile(`^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?(\+\d\d:\d\d|Z)$`)
-	// base64Regex expression to match base64 encoded strings
-	base64Regex = regexp.MustCompile(`^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=|[A-Za-z0-9+\\/]{4})$`)
-	// Non-alphanumeric characters regex
-	nonAlphaNumeric = regexp.MustCompile(`\W+`)
-	// Space followed by letter regex
+	iso8601Regex          = regexp.MustCompile(`^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?(\+\d\d:\d\d|Z)$`)
+	base64Regex           = regexp.MustCompile(`^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})$`)
+	nonAlphaNumeric       = regexp.MustCompile(`\W+`)
 	spaceFollowedByLetter = regexp.MustCompile(`\s+([a-zA-Z])`)
-	// Valid Go identifier regex
-	validGoIdentifier = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
-	// Cached title case converter
-	titleCaser = cases.Title(language.Und)
+	validGoIdentifier     = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+	titleCaser            = cases.Title(language.Und)
 )
 
 func ConvertToGoStructs(data any, flatten bool, formatType string) (string, error) {
@@ -43,7 +37,7 @@ func ConvertToGoStructs(data any, flatten bool, formatType string) (string, erro
 		data = arr[0]
 	}
 
-	structs[mainStruct] = parseScope(data, mainStruct, flatten, structs, formatType)
+	structs[mainStruct] = parseScope(data, mainStruct, "", flatten, structs, formatType)
 
 	keys := make([]string, 0, len(structs))
 	for key := range structs {
@@ -53,7 +47,7 @@ func ConvertToGoStructs(data any, flatten bool, formatType string) (string, erro
 	sort.Strings(keys)
 	for _, name := range keys {
 		definition := structs[name]
-		result.WriteString(fmt.Sprintf("type %s struct {\n%s}\n\n", titleCaser.String(name), definition))
+		result.WriteString(fmt.Sprintf("type %s struct {\n%s}\n\n", name, definition))
 	}
 
 	code := result.String()
@@ -70,10 +64,11 @@ func ConvertToGoStructs(data any, flatten bool, formatType string) (string, erro
 	return string(formatted), nil
 }
 
-func parseScope(scope any, structName string, flatten bool, structs map[string]string, formatType string) string {
+func parseScope(scope any, structName string, parentName string, flatten bool, structs map[string]string, formatType string) string {
 	var goCode strings.Builder
 	fieldNames := make(map[string]int)
 	fieldOrder := make([]string, 0)
+	usedNames := make(map[string]bool)
 
 	switch scope := scope.(type) {
 	case map[string]any:
@@ -91,18 +86,24 @@ func parseScope(scope any, structName string, flatten bool, structs map[string]s
 			if isNumeric(fieldName) || startsWithDigit(fieldName) {
 				fieldName = formatNumber(fieldName)
 			}
-			fieldType := goType(v, fieldName, flatten, structs, formatType)
+
+			fieldType := goType(v, fieldName, parentName, flatten, structs, formatType)
+			if _, exists := usedNames[fieldName]; exists {
+				fieldName = parentName + titleCaser.String(fieldName)
+				fieldType = goType(v, fieldName, parentName, flatten, structs, formatType)
+			}
+			usedNames[fieldName] = true
+
 			tag := getTag(k, formatType)
 			fieldOrder = append(fieldOrder, fmt.Sprintf("\t%s %s `%s`\n", titleCaser.String(fieldName), fieldType, tag))
 		}
 	case []any:
 		if len(scope) > 0 {
-			elemType := goType(scope[0], structName, flatten, structs, formatType)
+			elemType := goType(scope[0], structName, parentName, flatten, structs, formatType)
 			goCode.WriteString(fmt.Sprintf("[]%s", elemType))
 		}
 	}
 
-	// Sort the fields alphabetically
 	sort.Strings(fieldOrder)
 	for _, field := range fieldOrder {
 		goCode.WriteString(field)
@@ -111,7 +112,6 @@ func parseScope(scope any, structName string, flatten bool, structs map[string]s
 }
 
 func isBase64(s string) bool {
-	// Check if the length is a multiple of 4
 	if len(s)%4 != 0 {
 		return false
 	}
@@ -125,20 +125,15 @@ func isBase64(s string) bool {
 		return false
 	}
 
-	// Check for abnormal characters in the decoded string
 	for _, r := range decoded {
 		if !utf8.ValidRune(rune(r)) || (r < 32 && r != 9 && r != 10 && r != 13) {
 			return false
 		}
 	}
-	// shortest base64 value I could come up with was 5
-	// 	echo "" | base64 | wc --chars
-	// 5
-	// I rather want false negative then false positive results here, so we can fallback to string type
 	return len(s) > 5
 }
 
-func goType(value any, fieldName string, flatten bool, structs map[string]string, formatType string) string {
+func goType(value any, fieldName string, parentName string, flatten bool, structs map[string]string, formatType string) string {
 	switch value := value.(type) {
 	case string:
 		if iso8601Regex.MatchString(value) {
@@ -159,15 +154,18 @@ func goType(value any, fieldName string, flatten bool, structs map[string]string
 	case bool:
 		return "bool"
 	case map[string]any:
-		nestedStructName := toCamelCase(fieldName)
+		nestedStructName := titleCaser.String(fieldName)
 		if !flatten {
-			structs[nestedStructName] = parseScope(value, nestedStructName, flatten, structs, formatType)
+			if _, exists := structs[nestedStructName]; exists {
+				nestedStructName = titleCaser.String(parentName) + nestedStructName
+			}
+			structs[nestedStructName] = parseScope(value, nestedStructName, fieldName, flatten, structs, formatType)
 			return nestedStructName
 		}
-		return "struct {\n" + parseScope(value, nestedStructName, flatten, structs, formatType) + "\t}"
+		return "struct {\n" + parseScope(value, nestedStructName, fieldName, flatten, structs, formatType) + "\t}"
 	case []any:
 		if len(value) > 0 {
-			elemType := goType(value[0], fieldName, flatten, structs, formatType)
+			elemType := goType(value[0], fieldName, parentName, flatten, structs, formatType)
 			return "[]" + elemType
 		}
 		return "[]any"

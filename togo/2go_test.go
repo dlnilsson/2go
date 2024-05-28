@@ -29,6 +29,12 @@ func TestConvertToGoStructs(t *testing.T) {
 			expected:   "testdata/complex.result",
 		},
 		{
+			name:       "shared JSON",
+			file:       "testdata/shared.json",
+			formatType: "json",
+			expected:   "testdata/shared.result",
+		},
+		{
 			name:       "httpbin modified special char",
 			file:       "testdata/httpbin.json",
 			formatType: "json",
