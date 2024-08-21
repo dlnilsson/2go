@@ -64,6 +64,16 @@ func ConvertToGoStructs(data any, flatten bool, formatType string) (string, erro
 	return string(formatted), nil
 }
 
+const failedNaming = "NAMING_FAILED"
+
+func fName(s string) string {
+	if s == failedNaming {
+		return failedNaming
+	}
+	r := toCamelCase(s)
+	return lintName(titleCaser.String(r), initialisms())
+}
+
 func parseScope(scope any, structName string, parentName string, flatten bool, structs map[string]string, formatType string) string {
 	var goCode strings.Builder
 	fieldNames := make(map[string]int)
@@ -73,9 +83,9 @@ func parseScope(scope any, structName string, parentName string, flatten bool, s
 	switch scope := scope.(type) {
 	case map[string]any:
 		for k, v := range scope {
-			fieldName := toCamelCase(k)
+			fieldName := fName(k)
 			if fieldName == "" || !validGoIdentifier.MatchString(fieldName) {
-				fieldName = "NAMING_FAILED"
+				fieldName = failedNaming
 				if count, exists := fieldNames[fieldName]; exists {
 					fieldNames[fieldName] = count + 1
 					fieldName = fmt.Sprintf("%s%d", fieldName, count+1)
@@ -89,13 +99,13 @@ func parseScope(scope any, structName string, parentName string, flatten bool, s
 
 			fieldType := goType(v, fieldName, parentName, flatten, structs, formatType)
 			if _, exists := usedNames[fieldName]; exists {
-				fieldName = parentName + titleCaser.String(fieldName)
+				fieldName = parentName + fieldName
 				fieldType = goType(v, fieldName, parentName, flatten, structs, formatType)
 			}
 			usedNames[fieldName] = true
 
 			tag := getTag(k, formatType)
-			fieldOrder = append(fieldOrder, fmt.Sprintf("\t%s %s `%s`\n", titleCaser.String(fieldName), fieldType, tag))
+			fieldOrder = append(fieldOrder, fmt.Sprintf("\t%s %s `%s`\n", fieldName, fieldType, tag))
 		}
 	case []any:
 		if len(scope) > 0 {
