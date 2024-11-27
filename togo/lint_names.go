@@ -5,14 +5,18 @@ import (
 	"unicode"
 )
 
-// See: https://github.com/dominikh/go-tools/blob/915b568982be0ad65a98e822471748b328240ed0/config/example.conf#L2-L8
+// See:
+// https://github.com/dominikh/go-tools/blob/915b568982be0ad65a98e822471748b328240ed0/config/example.conf#L2-L8
+// https://google.github.io/styleguide/go/decisions.html#initialisms
 var il = []string{"ACL", "API", "ASCII", "CPU", "CSS", "DNS",
 	"EOF", "GUID", "HTML", "HTTP", "HTTPS", "ID",
 	"IP", "JSON", "QPS", "RAM", "RPC", "SLA",
 	"SMTP", "SQL", "SSH", "TCP", "TLS", "TTL",
 	"UDP", "UI", "GID", "UID", "UUID", "URI",
 	"URL", "UTF8", "VM", "XML", "XMPP", "XSRF",
-	"XSS", "SIP", "RTP", "AMQP", "DB", "TS"}
+	"XSS", "SIP", "RTP", "AMQP", "DB", "TS",
+	"XMLAPI", "IOS", "GRPC", "DDoS", "Txn",
+}
 
 func initialisms() map[string]bool {
 	initialisms := make(map[string]bool, len(il))
