@@ -66,12 +66,26 @@ func ConvertToGoStructs(data any, flatten bool, formatType string) (string, erro
 
 const failedNaming = "NAMING_FAILED"
 
+// knownNameExceptions is a set of names that are known to be exempt from naming checks.
+// This is usually because they are constrained by having to match names in the
+// standard library.
+// See: https://github.com/dominikh/go-tools/blob/915b568982be0ad65a98e822471748b328240ed0/stylecheck/st1003/st1003.go#L45-L51
+var knownNameExceptions = map[string]bool{
+	"LastInsertId": true, // must match database/sql
+	"kWh":          true,
+}
+
 func fName(s string) string {
 	if s == failedNaming {
 		return failedNaming
 	}
-	r := toCamelCase(s)
-	return lintName(titleCaser.String(r), initialisms())
+	if knownNameExceptions[s] {
+		return s
+	}
+	if s == lintName(s, initialisms()) {
+		lintName(toCamelCase(s), initialisms())
+	}
+	return lintName(strings.ToUpper(string(s[0]))+s[1:], initialisms())
 }
 
 func parseScope(scope any, structName string, parentName string, flatten bool, structs map[string]string, formatType string) string {

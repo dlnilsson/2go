@@ -102,3 +102,44 @@ func TestStartsWithDigit(t *testing.T) {
 		})
 	}
 }
+
+func Test_fName(t *testing.T) {
+	tests := []struct {
+		name string
+		arg  string
+		want string
+	}{
+		{
+			name: "basic",
+			arg:  "basicId",
+			want: "BasicID",
+		},
+		{
+			name: "LastInsertId",
+			arg:  "LastInsertId",
+			want: "LastInsertId",
+		},
+		{
+			name: "kWh",
+			arg:  "kWh",
+			want: "kWh",
+		},
+		{
+			name: "id",
+			arg:  "id",
+			want: "ID",
+		},
+		{
+			name: "something",
+			arg:  "something",
+			want: "Something",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := fName(tt.arg); got != tt.want {
+				t.Errorf("fName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
