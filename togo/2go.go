@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"golang.org/x/text/cases"
@@ -82,6 +83,27 @@ func fName(s string) string {
 	if knownNameExceptions[s] {
 		return s
 	}
+	dots := func(s string) string {
+		var (
+			result    strings.Builder
+			upperNext = true
+		)
+		for _, r := range s {
+			if r == '.' {
+				upperNext = true
+				continue
+			}
+			if upperNext {
+				result.WriteRune(unicode.ToUpper(r))
+				upperNext = false
+			} else {
+				result.WriteRune(r)
+			}
+		}
+		return result.String()
+	}
+	s = dots(s)
+
 	if s == lintName(s, initialisms()) {
 		lintName(toCamelCase(s), initialisms())
 	}

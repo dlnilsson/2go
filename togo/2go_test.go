@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -16,6 +17,12 @@ func TestConvertToGoStructs(t *testing.T) {
 		formatType string
 		expected   string
 	}{
+		{
+			name:       "dots in name",
+			file:       "testdata/dots-in-name-json",
+			formatType: "json",
+			expected:   "testdata/dots-in-name.result",
+		},
 		{
 			name:       "Simple JSON",
 			file:       "testdata/array.json",
@@ -50,7 +57,6 @@ func TestConvertToGoStructs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Read the file
 			data, err := os.ReadFile(tt.file)
 			if err != nil {
 				t.Fatalf("Failed to read file %s: %v", tt.file, err)
@@ -74,9 +80,10 @@ func TestConvertToGoStructs(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to read expected result file %s: %v", tt.expected, err)
 			}
-			want := string(expected)
-			if goCode != want {
-				t.Errorf("Expected:\n%q\nGot:\n%q", want, goCode)
+			got := strings.TrimRight(goCode, "\n")
+			want := strings.TrimRight(string(expected), "\n")
+			if got != want {
+				t.Errorf("want:\n%s\ngot:\n%s", want, got)
 			}
 		})
 	}
@@ -110,6 +117,11 @@ func Test_fName(t *testing.T) {
 		want string
 	}{
 		{
+			name: "introspection.token.claim",
+			arg:  "introspection.token.claim",
+			want: "IntrospectionTokenClaim",
+		},
+		{
 			name: "basic",
 			arg:  "basicId",
 			want: "BasicID",
@@ -138,7 +150,7 @@ func Test_fName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := fName(tt.arg); got != tt.want {
-				t.Errorf("fName() = %v, want %v", got, tt.want)
+				t.Errorf("fName() = %q, want %v", got, tt.want)
 			}
 		})
 	}
