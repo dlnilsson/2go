@@ -15,6 +15,7 @@ import (
 
 func main() {
 	nested := flag.Bool("nested", false, "nested structs")
+	ptr := flag.Bool("ptr", false, "ptr values")
 	flag.Parse()
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -51,7 +52,7 @@ func main() {
 		formatType = "yaml"
 	}
 
-	goCode, err := togo.ConvertToGoStructs(data, *nested, formatType)
+	goCode, err := togo.ConvertToGoStructs(data, formatType, *nested, *ptr)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Failed to generate Go code:", err)
 		os.Exit(1)

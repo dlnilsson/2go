@@ -72,7 +72,7 @@ func TestConvertToGoStructs(t *testing.T) {
 				t.Fatalf("Failed to unmarshal %s: %v", tt.formatType, err)
 			}
 
-			goCode, err := ConvertToGoStructs(input, false, tt.formatType)
+			goCode, err := ConvertToGoStructs(input, tt.formatType, false, false)
 			if err != nil {
 				t.Fatalf("Failed to generate Go code: %v", err)
 			}
