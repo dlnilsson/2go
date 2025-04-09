@@ -14,11 +14,13 @@ import (
 )
 
 func main() {
-	nested := flag.Bool("nested", false, "nested structs")
+	var (
+		nested   = flag.Bool("nested", false, "nested structs")
+		scanner  = bufio.NewScanner(os.Stdin)
+		inputStr strings.Builder
+	)
 	flag.Parse()
 
-	scanner := bufio.NewScanner(os.Stdin)
-	var inputStr strings.Builder
 	for scanner.Scan() {
 		inputStr.WriteString(scanner.Text() + "\n")
 	}
@@ -31,20 +33,17 @@ func main() {
 	var (
 		input      = inputStr.String()
 		data       any
-		err        error
-		formatType string
+		formatType = "json"
 	)
 
 	if json.Valid([]byte(input)) {
-		err = json.Unmarshal([]byte(input), &data)
-		if err != nil {
+		if err := json.Unmarshal([]byte(input), &data); err != nil {
 			fmt.Fprintln(os.Stderr, "Failed to parse JSON input:", err)
 			os.Exit(1)
 		}
-		formatType = "json"
 	} else {
 		decoder := yaml.NewDecoder(bytes.NewReader([]byte(input)))
-		if err = decoder.Decode(&data); err != nil {
+		if err := decoder.Decode(&data); err != nil {
 			fmt.Fprintln(os.Stderr, "Failed to parse YAML input:", err)
 			os.Exit(1)
 		}
